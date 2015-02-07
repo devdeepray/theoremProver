@@ -1,0 +1,37 @@
+package prover;
+
+import java.util.HashSet;
+
+public class TheoremState {
+	HashSet<ExprTree> hypSet;
+	ExprTree result; 
+	
+	TheoremState(String theorem) {
+		hypSet = new HashSet<ExprTree> ();
+		result = Parser.parse(Parser.preprocess(theorem));
+	}
+	
+	void deduce() {
+		ExprTree current = result;
+		while(current.prop == null) {
+			hypSet.add(current.left);
+			current =  current.right;
+		}
+		
+		hypSet.add(current.negation());
+		result = ExprTree.falseTree;
+	}
+	
+	@Override
+	public String toString() {
+		String res = "";
+		
+		for (ExprTree hyp : hypSet) {
+			res += hyp.toString() + "\n";
+		}
+		
+		res += "-----------------------------------\n" + result.toString();
+		
+		return res;
+	}
+}

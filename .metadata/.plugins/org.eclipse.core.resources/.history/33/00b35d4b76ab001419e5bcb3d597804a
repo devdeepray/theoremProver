@@ -1,0 +1,191 @@
+package prover;
+
+import java.util.TreeSet;
+
+public class Parser {
+	static ExprTree makeTree(String exprStr) {
+		exprStr = removeParen(exprStr);
+		ExprTree exprTree = new ExprTree();
+		
+		int parenCount = 0;
+		
+		for (int i = 0; i < exprStr.length(); ++i) {
+			if (exprStr.charAt(i) == '(') ++parenCount;
+			else if (exprStr.charAt(i) == ')') --parenCount;
+			
+			if (parenCount == 0) {
+				if (i + 1 == exprStr.length()) {
+					exprTree.proposition = exprStr;
+					return exprTree;
+				}
+				else {
+					if (exprStr.charAt(0) == '(') {
+						exprTree.left = parse(exprStr.substring(1, i));
+					}
+					else {
+						exprTree.left = parse(exprStr.substring(0, i + 1));
+					}
+					
+					if (exprStr.charAt(exprStr.length() - 1) == ')') {
+						exprTree.right = parse(exprStr.substring(i + 4, exprStr.length() - 1));
+					}
+					else {
+						//System.out.println(exprStr);
+						exprTree.right = parse(exprStr.substring(i + 3, exprStr.length()));
+					}
+					return exprTree;
+				}
+			}
+		}
+		return null;
+	}
+	
+	public static TreeSet<ExprTree> deduce(ExprTree result) {
+		TreeSet<ExprTree> hypSet = new TreeSet<ExprTree>();
+		ExprTree current = result;
+		while(current.proposition == null) {
+			hypSet.add(current.left);
+			current =  current.right;
+		}
+		
+		hypSet.add(current.negation());
+		return hypSet;
+	}
+	
+	/*
+	 * Gets the position of the first matched bracket on the right
+	 */
+	static int getMatchedBracketPos(String expr, int b1Pos)
+	{
+		int parenCount = 1;
+		for(int pos = b1Pos+1; pos != expr.length(); ++pos)
+		{
+			if(expr.charAt(pos) == '(') ++parenCount;
+			if(expr.charAt(pos) == ')') --parenCount;
+			if(parenCount == 0) return pos;
+		}
+		return -1;
+	}
+	
+	
+	
+	/*
+	 *	ASSUME NO ~ SYMBOLS AS IT HAS HIGHER PRECEDENCE!!!
+	 * Removes . symbols and replaces it with implications
+	 * A.B === ((A->(B->F))->F)
+	 * . Has precedence over ->
+	 */
+	static String removeAnd(String exprStr) {
+		
+		int dotPos = 0;
+		while((dotPos = exprStr.indexOf('.')) != -1)
+		{
+			if(dotPos == -1) return exprStr;
+			String lexpr, mlexpr, mrexpr, rexpr;
+			// Get the expression on the left
+			if(exprStr.charAt(dotPos - 1) == ')') // Complex left expr
+			{
+				int matchedLeftBracket = getLeftMatchedBracketPos(exprStr, dotPos - 1);
+				lexpr = exprStr.substring(0, matchedLeftBracket);
+				mlexpr = exprStr.substring(matchedLeftBracket, dotPos);
+			}
+			else
+			{
+				lexpr = exprStr.substring(0, dotPos-1);
+				mlexpr = exprStr.substring(dotPos-1, dotPos);
+			}
+			
+			if(exprStr.charAt(dotPos + 1) == '(') // Complex right expr
+			{
+				int matchedRightBracket = getMatchedBracketPos(exprStr, dotPos + 1);
+				rexpr = exprStr.substring(dotPos + 1, matchedRightBracket + 1);
+				mlexpr = exprStr.substring(matchedLeftBracket, dotPos);
+			}
+			else
+			{
+				lexpr = exprStr.substring(0, dotPos-1);
+				mlexpr = exprStr.substring(dotPos-1, dotPos);
+			}
+			
+			if(exprStr.charAt(dotPos + 1) == '(') // Complex expression negated
+			{
+				int matchedBracketPos = getMatchedBracketPos(exprStr, tildePos + 1);
+				String lexpr = exprStr.substring(0, tildePos); // Left subexpression
+				String mexpr = exprStr.substring(tildePos + 1, matchedBracketPos + 1); // Negated subexpression 
+				mexpr = removeTilde(mexpr);
+				String rexpr = exprStr.substring(matchedBracketPos + 1); // Right subexpression
+				exprStr = lexpr + "(" +  mexpr + "->F)" + rexpr;
+			}
+			else
+			{
+				String lexpr = exprStr.substring(0, tildePos); // Left subexpression
+				String mexpr = exprStr.substring(tildePos + 1, tildePos + 2); // Negated subexpression 
+				mexpr = removeTilde(mexpr);
+				String rexpr = exprStr.substring(tildePos + 2); // Right subexpression
+				exprStr = lexpr + "(" +  mexpr + "->F)" + rexpr;
+			}
+		}
+		return exprStr;
+	}
+	
+	/*
+	 * Removes ~E and replaces it with (E->F)
+	 */
+	static String removeTilde(String exprStr) {
+		
+		int tildePos = 0;
+		while((tildePos = exprStr.indexOf('~')) != -1)
+		{
+			if(tildePos == -1) return exprStr;
+			
+			if(exprStr.charAt(tildePos + 1) == '(') // Complex expression negated
+			{
+				int matchedBracketPos = getMatchedBracketPos(exprStr, tildePos + 1);
+				String lexpr = exprStr.substring(0, tildePos); // Left subexpression
+				String mexpr = exprStr.substring(tildePos + 1, matchedBracketPos + 1); // Negated subexpression 
+				mexpr = removeTilde(mexpr);
+				String rexpr = exprStr.substring(matchedBracketPos + 1); // Right subexpression
+				exprStr = lexpr + "(" +  mexpr + "->F)" + rexpr;
+			}
+			else
+			{
+				String lexpr = exprStr.substring(0, tildePos); // Left subexpression
+				String mexpr = exprStr.substring(tildePos + 1, tildePos + 2); // Negated subexpression 
+				mexpr = removeTilde(mexpr);
+				String rexpr = exprStr.substring(tildePos + 2); // Right subexpression
+				exprStr = lexpr + "(" +  mexpr + "->F)" + rexpr;
+			}
+		}
+		return exprStr;
+	}
+	
+	
+	static String removeParen(String exprStr) {
+		int minParen = exprStr.length();
+		int parenCount = 0;
+		for (int i = 0; i <  exprStr.length(); i++) {
+			if (exprStr.charAt(i) == '(') ++parenCount;
+			else if (exprStr.charAt(i) == ')') --parenCount;
+			
+			if (exprStr.charAt(i) != '(' && exprStr.charAt(i) != ')') minParen = Math.min(minParen, parenCount);
+		}
+		
+		
+		//System.out.println(exprStr.substring(minParen, exprStr.length() - minParen));
+		return exprStr.substring(minParen, exprStr.length() - minParen);
+	}
+	
+	/*
+	 * Removes spaces and replaces negations with -> equivalents
+	 */
+	public static String preprocess (String exprStr) {
+		String finalStr = exprStr.replaceAll("\\s+", ""); // Remove spaces
+		finalStr = removeTilde(finalStr); // Remove ~ and replace with A->F
+		return finalStr;
+	}
+	
+	public static ExprTree parse(String expr) {
+		return makeTree(removeParen(expr));
+	}
+	
+}

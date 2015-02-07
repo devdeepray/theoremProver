@@ -1,0 +1,45 @@
+package prover;
+
+public class ExprTree {
+	static final ExprTree falseTree = new ExprTree("F"); 
+	String prop = null;
+	ExprTree left = null;
+	ExprTree right = null;
+	
+	ExprTree () {
+	}
+	
+	ExprTree (String _prop) {
+		this.prop = _prop;
+	}
+	
+	@Override
+	public String toString() {
+		if (prop != null) return prop;
+		else {
+			return "(" + left.toString() + ") --> (" + right.toString() + ")";
+		}
+	}
+	
+	public ExprTree negation(){
+		ExprTree neg = new ExprTree();
+		neg.left = this;
+		neg.right = falseTree;
+		return neg;
+	}
+	
+	boolean isSame(ExprTree tree) {
+		if ((this.prop != null) && (tree.prop != null)) return this.prop.equals(tree.prop);
+		else if ((this.prop != null) || (tree.prop != null)) return false;
+		else {
+			return left.isSame(tree.left) && right.isSame(tree.right); 
+		}
+	}
+	
+	public static void main(String[] args) {
+		TheoremState theorem = new TheoremState("(~(p -> t) -> (r -> g))");
+		theorem.deduce();
+		System.out.println(theorem.toString());
+	}
+}
+

@@ -1,0 +1,103 @@
+package prover;
+
+public class Parser {
+	static ExprTree makeTree(String exprStr) {
+		exprStr = removeParen(exprStr);
+		ExprTree exprTree = new ExprTree();
+		
+		int parenCount = 0;
+		
+		for (int i = 0; i < exprStr.length(); ++i) {
+			if (exprStr.charAt(i) == '(') ++parenCount;
+			else if (exprStr.charAt(i) == ')') --parenCount;
+			
+			if (parenCount == 0) {
+				if (i + 1 == exprStr.length()) {
+					exprTree.prop = exprStr;
+					return exprTree;
+				}
+				else {
+					if (exprStr.charAt(0) == '(') {
+						exprTree.left = parse(exprStr.substring(1, i));
+					}
+					else {
+						exprTree.left = parse(exprStr.substring(0, i + 1));
+					}
+					
+					if (exprStr.charAt(exprStr.length() - 1) == ')') {
+						exprTree.right = parse(exprStr.substring(i + 4, exprStr.length() - 1));
+					}
+					else {
+						//System.out.println(exprStr);
+						exprTree.right = parse(exprStr.substring(i + 3, exprStr.length()));
+					}
+					return exprTree;
+				}
+			}
+		}
+		return null;
+	}
+	
+	
+	/*
+	 * Gets the position of the first matched bracket on the right
+	 */
+	int getMatchedBracketPos(String expr, int b1Pos)
+	{
+		
+	}
+	
+	/*
+	 * Removes ~E and replaces it with (E->F)
+	 */
+	static String removeOneTilde(String exprStr) {
+		int tildePos = exprStr.indexOf('~');
+		if(tildePos == -1) return exprStr;
+		
+		if(exprStr.charAt(tildePos + 1) == '(')
+		{
+			int matchedBracketPos = getMatchedBracketPos(exprStr, tildePos + 1);
+		}
+		
+		int parenCount = 0;
+		int i;
+		for (i = tildePos + 1; i < exprStr.length() ; i++) {
+			if (exprStr.charAt(i) == '(') ++parenCount;
+			else if (exprStr.charAt(i) == ')') --parenCount;
+			
+			if (parenCount == 0) break;
+		}
+		
+		String negatedExp = exprStr.substring(tildePos, i + 1);
+		return exprStr.replace(negatedExp, "(" + negatedExp.substring(1) + "->F)");
+	}
+	
+	
+	static String removeParen(String exprStr) {
+		int minParen = exprStr.length();
+		int parenCount = 0;
+		for (int i = 0; i <  exprStr.length(); i++) {
+			if (exprStr.charAt(i) == '(') ++parenCount;
+			else if (exprStr.charAt(i) == ')') --parenCount;
+			
+			if (exprStr.charAt(i) != '(' && exprStr.charAt(i) != ')') minParen = Math.min(minParen, parenCount);
+		}
+		
+		
+		//System.out.println(exprStr.substring(minParen, exprStr.length() - minParen));
+		return exprStr.substring(minParen, exprStr.length() - minParen);
+	}
+	
+	static String preprocess (String exprStr) {
+		String finalStr = exprStr.replaceAll("\\s+", "");
+		while(finalStr.contains("~")) {
+			finalStr = removeTilde(finalStr);
+		}
+		return finalStr;
+	}
+	
+	static ExprTree parse(String expr) {
+		return makeTree(removeParen(preprocess(expr)));
+	}
+	
+}

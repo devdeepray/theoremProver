@@ -1,0 +1,76 @@
+package theoremProver;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.TreeSet;
+
+import prover.ExprTree;
+import prover.Parser;
+import prover.ProofState;
+import prover.TheoremState;
+import aStar.AStar;
+import aStar.GlobalConstants;
+
+public class TheoremProver {
+
+	/**
+	 * @param args
+	 * @throws IOException 
+	 */
+	public static void main(String[] args) throws IOException {
+		
+		InputStreamReader isr = new InputStreamReader(System.in);
+		BufferedReader br = new BufferedReader(isr);
+		GlobalConstants.hScaler = 1;
+		
+		ExprTree theorem = Parser.parse(Parser.preprocess(("p->~(~p.~q)")));
+		
+		System.out.println(Parser.deduce(theorem).toString());
+		
+		ProofState start = new ProofState(Parser.deduce(theorem));
+		TreeSet<ExprTree> startSet = new TreeSet<ExprTree>();
+		TreeSet<ExprTree> goalSet = new TreeSet<ExprTree>();
+		goalSet.add(ExprTree.falseTree);
+		ProofState goal = new ProofState(goalSet);
+		AStar<ProofState> aStar = new AStar<ProofState>();
+		
+		List<ProofState> res;
+		
+		do
+		{
+			res= aStar.search(start, goal);
+			if(res == null)
+			{
+				System.out.println("Please give help");
+				ExprTree tmp = Parser.parse(Parser.preprocess(br.readLine()));
+				ExprTree contraTmp = Parser.contraPositive(tmp);
+				start.hypSet.add(tmp);
+				start.hypSet.add(contraTmp);
+			}
+		}while(res == null);
+		
+		LinkedList<ProofState> correctOrderSolution = new LinkedList<ProofState>();
+		
+		for (ProofState temp: res) {
+			correctOrderSolution.addFirst(temp);
+		}
+		for(ProofState temp : correctOrderSolution)
+		{
+			if(temp.origin == 0)
+			{
+				System.out.println("Start:");
+				temp.display();
+			}
+			else if(temp.origin == 1)
+			{
+				
+			}
+		}
+		
+	} 
+
+}

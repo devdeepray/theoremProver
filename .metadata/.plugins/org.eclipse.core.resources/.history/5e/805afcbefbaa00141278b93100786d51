@@ -1,0 +1,127 @@
+package aStar;
+
+import java.util.LinkedList;
+import java.util.List;
+import java.util.TreeMap;
+import java.util.TreeSet;
+
+public class AStar<NodeType extends Node<NodeType>> {
+	public List<NodeType> search(NodeType start, NodeType goal)
+	{
+		
+		
+		if(!start.checkReachability(goal)) return null;
+		
+		// Statistics
+		int nNexpanded = 0, nNseen = 1;
+		double maxHval = 0;
+		
+		
+		// Open set ordered on (fval, hval, nodeState)
+		TreeSet<WeightNode<NodeType>> openNodes = new TreeSet<WeightNode<NodeType>>();
+		
+		// Closed set ordered on nodeState
+		TreeSet<NodeType> closedNodes = new TreeSet<NodeType>();
+		
+		// Weight map: map from nodeState to (gVal in openNodes) or (min gVal).
+		// Actually is a map of min gval for all nodes in openset + closed set
+		TreeMap<NodeType, Double> weightMap = new TreeMap<NodeType, Double>();
+		
+		// Parent map
+		TreeMap<NodeType, NodeType> parentMap = new TreeMap<NodeType, NodeType>();
+		
+		openNodes.add(new WeightNode<NodeType>(start, start.hval(goal)));
+		weightMap.put(start, 0d);
+		
+		while(!openNodes.isEmpty())
+		{
+			
+//			try {
+//				java.lang.Thread.sleep(1000);
+//			} catch (InterruptedException e) {
+//				// TODO Auto-generated catch block
+//				e.printStackTrace();
+//			}
+			WeightNode<NodeType> currentNode = openNodes.first();
+			openNodes.remove(currentNode);
+			double cgval = currentNode.weight - currentNode.node.hval(goal);
+			@SuppressWarnings("unused")
+			double chval = currentNode.weight - cgval;
+			@SuppressWarnings("unused")
+			double cfval = currentNode.weight;
+			closedNodes.add(currentNode.node);
+			
+			//currentNode.node.display();
+			
+			if(currentNode.node.isSame(goal)) 
+			{
+				//System.out.println("Found goal");
+				LinkedList<NodeType> result  = new LinkedList<NodeType>();
+				NodeType curnode = goal;
+				while(true)
+				{
+					System.out.println("cunt");
+					result.add(curnode);
+					if(curnode.isSame(start)) break;
+					curnode = parentMap.get(curnode);
+				}
+				System.out.println(result.size());
+				return result;
+			}
+			
+			// !! Increment no. of nodes examined (Counts duplicates)
+			nNexpanded++;
+			
+			// !! Update max hval
+			if (currentNode.node.hval(goal) > maxHval) maxHval = currentNode.node.hval(goal);
+			
+			
+			// Get all the children
+			List<WeightNode<NodeType>> children = currentNode.node.children();
+			for(WeightNode<NodeType> currentChild : children)
+			{
+				
+				// Num of ppl seen
+				nNseen++;
+				
+				
+				Double curChildCurWeight = weightMap.get(currentChild.node);
+				Double curChildGval = cgval + currentChild.weight;
+				
+				if(curChildCurWeight == null)
+				{
+					weightMap.put(currentChild.node, curChildGval);
+					openNodes.add(new WeightNode<NodeType>(currentChild.node, curChildGval 
+																			+ currentChild.node.hval(goal)));
+					parentMap.put(currentChild.node, currentNode.node);
+				}
+				else if(curChildGval < curChildCurWeight)
+				{
+					// Inside closed set case
+					if(closedNodes.contains(currentChild.node))
+					{
+						closedNodes.remove(currentChild.node);
+						//System.out.println("asjdasd");
+					}
+					else
+					{
+						Double oldFval = curChildCurWeight + currentChild.node.hval(goal);
+						openNodes.remove(new WeightNode<NodeType>(currentChild.node, oldFval));
+					}
+					
+					weightMap.put(currentChild.node, curChildGval);
+					openNodes.add(new WeightNode<NodeType>(currentChild.node, curChildGval 
+							+ currentChild.node.hval(goal)));
+					parentMap.put(currentChild.node, currentNode.node);
+				}
+				
+				
+			}
+			
+			
+			
+		}
+		return null;
+		
+	}
+}
